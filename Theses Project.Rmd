@@ -1,0 +1,263 @@
+---
+title: "Data Wrangling - Theses project"
+author: "Anh Thu"
+date: "10/12/2021"
+output: pdf_document
+---
+
+```{r}
+library(readr)
+library(naniar)
+library(dplyr)
+library(stringr)
+library(tidyr)
+library(plyr)
+library(lubridate)
+library(ggplot2)
+```
+
+```{r}
+df=read_csv("theses_v2.csv")
+```
+```{r}
+install.packages("visdat")
+```
+```{r}
+install.packages("VIM")
+install.packages("naniar")
+install.packages("missMDA")
+install.packages("Amelia")
+install.packages("mice")
+install.packages("missForest")
+install.packages("FactoMineR")
+install.packages("Tidyverse")
+```
+
+```{r}
+vis_miss(df, warn_large_data = FALSE)
+```
+
+
+
+
+
+```{r}
+str(df$"Date de soutenance")
+dt <- df$"Date de soutenance"
+head(dt, n=10)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+df_languages <- df$"Langue de la these"
+```
+
+```{r}
+df_languages <- df_languages[!is.na(df_languages)]
+unique(df_languages)
+```
+
+```{r}
+df_languages <- data.frame(df_languages)
+colnames(df_languages) <- c("Language")
+head(df_languages)
+```
+```{r}
+library("stringr")
+df_languages$lang_length <- str_length(df_languages$Language) / 2
+head(df_languages)
+```
+```{r}
+df_languages <- df_languages[order(df_languages$lang_length),]
+df_languages$Language <- tolower(df_languages$Language)
+head(df_languages)
+```
+```{r}
+df_languages <- df_languages %>% mutate(Lang_Type = case_when(
+    (lang_length == 1 & Language == "en") ~ "English",
+    (lang_length == 1 & Language == "fr") ~ "French",
+    (lang_length == 2 & (Language == "enfr" | Language == "fren")) ~ "Bilingual",
+    ((lang_length == 1 & Language != "en" & Language != "fr") | (lang_length == 2 & (Language != "enfr" | Language != "fren")) | (lang_length > 2)) ~ "Other",
+    ))
+head(df_languages)
+tail(df_languages)
+```
+
+```{r}
+drops <- c("Language", "lang_length")
+df_languages <- df_languages[ , !(names(df_languages) %in% drops)]
+df_languages <- data.frame(df_languages)
+head(df_languages)
+```
+```{r}
+colnames(df_languages) <- c("Lang_Type")
+head(df_languages)
+```
+
+```{r}
+unique(df_languages)
+```
+```{r}
+df_lang_type <- df_languages %>% group_by(Lang_Type) %>% count()
+head(df_lang_type)
+```
+```{r}
+df_lang_type$Lang_Type <- factor(df_lang_type$Lang_Type, levels = df_lang_type$Lang_Type)
+df_lang_type
+```
+
+
+```{r}
+df_lang_date <- df[,c("Date de soutenance","Langue de la these")]
+head(df_lang_date)
+```
+```{r}
+df_lang_date <- df_lang_date %>% drop_na()
+head(df_lang_date)
+```
+
+```{r}
+df_lang_date$"Date de soutenance" <- as.Date(df_lang_date$"Date de soutenance", "%d-%m-%y")
+colnames(df_lang_date) <- c("Date", "Language")
+head(df_lang_date)
+```
+
+
+```{r}
+df_lang_date$Lang_Length <- str_length(df_lang_date$Language) / 2
+head(df_lang_date)
+```
+
+```{r}
+df_lang_date <- df_lang_date[order(df_lang_date$Lang_Length),]
+df_lang_date$Language <- tolower(df_lang_date$Language)
+head(df_lang_date)
+```
+```{r}
+df_lang_date <- df_lang_date %>% mutate(Lang_Type = case_when(
+    (Lang_Length == 1 & Language == "en") ~ "English",
+    (Lang_Length == 1 & Language == "fr") ~ "French",
+    (Lang_Length == 2 & (Language == "enfr" | Language == "fren")) ~ "Bilingual",
+    ((Lang_Length == 1 & Language != "en" & Language != "fr") | (Lang_Length == 2 & (Language != "enfr" | Language != "fren")) | (Lang_Length > 2)) ~ "Other",
+    ))
+head(df_lang_date)
+tail(df_lang_date)
+```
+
+```{r}
+df_lang_date <- df_lang_date %>% dplyr::mutate(Year = lubridate::year(Date))
+head(df_lang_date)
+```
+
+```{r}
+df_lang_date <- df_lang_date[order(df_lang_date$Year),]
+head(df_lang_date)
+```
+
+```{r}
+unique(df_lang_date$Year)
+head(df_lang_date)
+```
+```{r}
+df_lang_type_year <- df_lang_date %>% select(Year, Lang_Type) %>% group_by(Year, Lang_Type) %>% count()
+colnames(df_lang_type_year) <- c("Year", "Lang_Type", "Sum.Lang_Type")
+head(df_lang_type_year)
+tail(df_lang_type_year)
+```
+```{r}
+df_year <- df_lang_date %>% select(Year) %>% group_by(Year) %>% count()
+colnames(df_year) <- c("Year", "Sum.Year")
+head(df_year)
+```
+
+```{r}
+full_lang_type <- full_join(df_lang_type_year, df_year, by = 'Year')
+full_lang_type
+```
+```{r}
+full_lang_type$Sum.Percentage <- round((full_lang_type$Sum.Lang_Type / full_lang_type$Sum.Year) * 100, 2)
+head(full_lang_type)
+
+```
+
+
+```{r}
+lang_type_summary <- ddply(full_lang_type, ~Lang_Type, summarise, mean = mean(Sum.Percentage), sd = sd(Sum.Percentage))
+lang_type_summary$sd_2 <- lang_type_summary$sd / 2
+lang_type_summary
+```
+
+```{r}
+lang_type_summary$Lang_Type <- factor(lang_type_summary$Lang_Type, levels = lang_type_summary$Lang_Type)
+lang_type_summary
+```
+
+```{r}
+library(dplyr)
+
+# Plot
+ggplot(full_lang_type, aes(x=Year, y=Sum.Percentage, fill=Lang_Type)) + 
+    geom_area(alpha=0.6 , size=1, colour="black")
+```
+
+
+## Gender
+```{r}
+library(gender)
+vignette(topic = "predicting-gender", package = "gender")
+```
+
+```{r}
+df %>% 
+  distinct(Auteur) %>% 
+  rowwise() %>% 
+  do(results = gender(.$Auteur, method = "demo")) %>% 
+  do(bind_rows(.$results))
+```
+
+
+
+
+
+
+
+
+
+
