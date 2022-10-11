@@ -1,0 +1,267 @@
+---
+title: "Data Wrangling"
+author: "Anh Thu"
+date: "2022-10-11"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Import the library
+library(readr)
+library(naniar)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(plotly)
+library(tidyverse)
+```
+
+```{r}
+# Read the csv file
+df=read_csv("Datasets/theses_v2.csv",show_col_types = FALSE)
+head(df)
+```
+# Missing Data
+
+```{r}
+ #Plot the missing data graph
+vis_miss(df, warn_large_data = FALSE)
+```
+
+## Create the n.pages variable under condition & complete missing values using an imputation technique.
+```{r}
+x <- seq(1, as.integer(0.8 * nrow(df)))
+y <- rnorm(x, mean = 200, sd = 50)
+missing = nrow(df) - as.integer( 0.8 * nrow(df))
+na_col <- rep(NA, missing)
+set.seed(100)
+n.pages = sample(c(as.integer(y), na_col))
+df$n.pages <- n.pages
+head(df$n.pages, 10)
+```
+# Common issues
+##The proportion of defences at the first of january evolve over the years
+```{r}
+# Load the Date de soutenance column
+str(df$"Date de soutenance")
+```
+
+```{r}
+dt <- df$"Date de soutenance"
+head(dt, n=10)
+```
+```{r}
+# Convert to class "Date" representing calendar dates
+dt <- as.Date(dt, "%d-%m-%y")
+```
+
+```{r}
+# Create data frame df_date
+df_date <- data.frame(dt)
+df_date <- na.omit(df_date)
+head(df_date)
+```
+```{r}
+ # Parse and manipulate dates into different column (year, month, day)
+df_date <- df_date %>% dplyr::mutate(year = lubridate::year(dt), month = lubridate::month(dt), day = lubridate::day(dt))
+head(df_date)
+```
+
+```{r}
+# Create data frame newyear
+newyear <- df_date %>% filter(month == 1)
+newyear<- newyear %>% filter(day == 1)
+head(newyear)
+```
+```{r}
+ #Group and count by year in df_newyear
+df_newyear <- newyear %>% select(year) %>% group_by(year) %>% count()
+head(df_newyear)
+```
+```{r}
+#Group and count by year in df_date_all
+df_date_all <-df_date %>% select(year) %>% group_by(year) %>% count()
+head(df_date_all)
+```
+
+```{r}
+# Mutating joins add columns from from df_newyear to df_date_all
+df_proportion <- inner_join(df_newyear, df_date_all, by ="year")
+df_proportion$proportion <- df_proportion$n.x/df_proportion$n.y
+head(df_proportion)
+```
+
+```{r}
+ # Plot the proportion of defences at the first of january evolve over the years
+ggplot(df_proportion, aes(x=year, y=proportion)) +
+  geom_line() + ggtitle("Proportion of PhD defended on the first of January over the years")
+```
+```{r}
+subset(df_proportion, year > 2005 & year < 2015)
+```
+```{r}
+#the proportion of defenses at the first of January started decreasing from 2006 
+```
+##Cecile Martin problems
+
+```{r}
+# Load the Cécile Martin from Auteur column in df
+Cecile <- filter(df, df$Auteur == "Cecile Martin")
+Cecile
+```
+
+```{r}
+#There are 4 different people with the same name Cecile, 1 of them has 4 theses
+```
+
+
+#Supervisor’s ID
+```{r}
+#Create supervisor id data frame with the length column
+supervisor_id <- df$`Identifiant directeur`
+df_sup <- data.frame(supervisor_id)
+df_sup <- na.omit(df_sup)
+df_sup$length <- nchar(df_sup$supervisor_id)
+```
+
+
+```{r}
+head(df_sup)
+```
+
+```{r}
+df_sup2 <- df_sup %>% select(length) %>% group_by(length) %>% count()
+head(df_sup2)
+```
+
+```{r}
+head(df_date_all)
+```
+```{r}
+ #Plot
+ggplot(df_date_all, aes(x=year, y=n)) +
+  geom_line() + ggtitle("The number of PhD defended over the years") 
+```
+
+```{r}
+#There is a sudden drop in the number of PhD defended in 2019 and 2020.
+subset(df_date_all, year > 2015 & year < 2021)
+`````
+## Languages
+```{r}
+languages_date <- df[,c("Date de soutenance","Langue de la these")]
+head(languages_date)
+```
+```{r}
+languages_date$"Date de soutenance" <- as.Date(languages_date$"Date de soutenance", "%d-%m-%y")
+head(languages_date)
+```
+
+```{r}
+#Create data frame df_languages_date have 2 columns Date & Language
+df_languages_date <- data.frame(languages_date)
+df_languages_date <- na.omit(df_languages_date)
+df_languages_date <- data.frame(df_languages_date)
+colnames(df_languages_date) <- c("Date", "Language")
+head(df_languages_date)
+```
+
+```{r}
+#Lower the character in Language col
+df_languages_date$Language <- tolower(df_languages_date$Language)
+head(df_languages_date)
+```
+```{r}
+#Create new col "Type" using mutate
+df_languages_date <- df_languages_date %>% mutate(Type = case_when(
+    (Language == "en") ~ "English",
+    (Language == "fr") ~ "French",
+    (Language == "enfr" | Language == "fren") ~ "Bilingual",
+    TRUE ~ "Other",
+    ))
+head(df_languages_date)
+```
+```{r}
+unique(df_languages_date$Type)
+```
+
+
+```{r}
+df_lang_type <- df_languages_date %>% group_by(Type) %>% count()
+head(df_lang_type)
+```
+```{r}
+#Parsing dates using lubridate and create new col "Year"
+df_languages_date <- df_languages_date %>% dplyr::mutate(Year = lubridate::year(Date))
+df_languages_date <- df_languages_date[order(df_languages_date$Year),]
+head(df_languages_date)
+```
+```{r}
+ #Check unique
+unique(df_languages_date$Year)
+```
+
+```{r}
+#Sum by year and type of the languages
+df_la_type_year <- df_languages_date %>% select(Year, Type) %>% group_by(Year, Type) %>% count()
+colnames(df_la_type_year) <- c("Year", "Type", "Sum")
+head(df_la_type_year)
+```
+```{r}
+#Sum by year
+df_year <- df_languages_date %>% select(Year) %>% group_by(Year) %>% count()
+colnames(df_year) <- c("Year", "Sum_Year")
+head(df_year)
+```
+```{r}
+ #Merge 2 df
+full_lang_type <- full_join(df_la_type_year, df_year, by = 'Year')
+head(full_lang_type)
+```
+```{r}
+ #Calculate percentage of sum
+full_lang_type$Sum_Percentage <- round((full_lang_type$Sum / full_lang_type$Sum_Year) * 100,2)
+head(full_lang_type)
+```
+```{r}
+# Plot
+ggplot(full_lang_type, aes(x=Year, y=Sum_Percentage, fill=Type)) +
+    geom_area(alpha=0.7 , size=1, colour="white") +
+  ggtitle("The choice of the language of the manuscript evolved over the past decades")
+```
+```{r}
+ df_plotly <- full_lang_type %>% filter(Year >= 1994 & Year <2020)
+plot_ly(type = 'scatter', x = df_plotly$Year, y = df_plotly$Sum_Percentage, color = df_plotly$Type,
+            mode = 'lines', fill = 'tonexty')
+```
+```{r}
+ University <- df %>% group_by(`Etablissement de soutenance`) %>% summarise(n=n()) %>% arrange(desc(n))
+uni <-head(University, n=10)
+uni
+```
+```{r}
+# load the library
+library(forcats)
+# Reorder following the value of another column:
+uni %>%
+  ggplot( aes(x=uni$`Etablissement de soutenance`, y=uni$n)) +
+    geom_bar(stat="identity", fill="#f68060", alpha=.6, width=.4) +
+    coord_flip() +
+    xlab("University") +
+    ylab("Total Theses") +
+    ggtitle("Top 10 universities have the most theses from 1971 to 2020") +
+    theme_bw()
+```
+```{r}
+ Public <- df %>% group_by(`Accessible en ligne`) %>% summarise(n=n()) %>% arrange(desc(n))
+Public
+```
+```{r}
+labels = c( "no","yes")
+pie(Public$n,Public$`Accessible en ligne`, main="The protortion of theses accessable online")
+```
+
