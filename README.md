@@ -30,7 +30,7 @@ What do you notice. For instance, how do you explain, with regards to the issue 
 Create a variable (n.pages, for number of pages) with a normal distribution of 200 pages and a standard deviation of 50 pages, for a sample of 80 percent of the dataset. Complete missing values (the 20 percent that remain) using an imputation technique.
 
 
-3.3 Common issues
+#### 3.3 Common issues
 Check for issues in the defence data. How common are the defences on the first of January. In R, use filter, groupby and count function from the dplyr
 3
 library, and the lubridate library, and answer the following question : How did the proportion of defences at the first of january evolve over the years ?
@@ -56,12 +56,20 @@ Propose another research result that we could derive from this dataset, from the
 ### 4. References
 Copeland, S., Penman, A., Milne, R. (2005). Electronic theses: The turning point. Program, 39(3), 185 197. https://doi.org/10.1108/00330330510610546
 ElSabry, E. (2017). Who needs access to research? Exploring the societal impact of open access. Revue Fran ̧caise Des Sciences de l’information et de La Communication, 11, Article 11. https://doi.org/10.4000/rfsic.3271
+
 Harnad, S. (2011). Open Access to Research. Changing Researcher Behavior Through University and Funder Mandates. JeDEM - EJournal of EDemocracy and Open Government, 3(1), 33 41. https://doi.org/10.29379/jedem.v3i1.54
+
 Martin, I. (2015). Le signalement des theses de doctorat. I2D - Information, donnees documents, Volume 52(1), 46 47.
+
 Moxley, J. M. (2001). American universities should require electronic theses and dissertations. Educause Quarterly, (3), 61.
+
 Moyle, M. (2008). Improving access to European e-theses: the DART- Europe Programme. Liber Quarterly, 18(3-4).
+
 Park, E. G., Richard, M. (2011). Metadata assessment in e-theses and dissertations of Canadian institutional repositories. The Electronic Library, 29(3), 394 407. https://doi.org/10.1108/02640471111141124
+
 Piwowar, H., Priem, J., Lariviere, V., Alperin, J. P., Matthias, L., Norlander, B., Farley, A., West, J., Haustein, S. (2018). The state of OA: A large-scale analysis of the prevalence and impact of Open Access articles. PeerJ, 6, e4375. https://doi.org/10.7717/peerj.4375
+
 Rabesandratana, T. (2019). The world debates open-access mandates. Sci- ence, 363(6422), 11–12. https://doi.org/10.1126/science.363.6422.11
+
 Stanton, K. V., Liew, C. L. (2011). Open Access Theses in Institutional Repositories: An Exploratory Study of the Perceptions of Doctoral Students. Information Research: An International Electronic Journal, 16(4).
 
